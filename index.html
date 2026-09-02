@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Burn — Subscription Tracker</title>
+  <meta name="description" content="Local-first tracker for recurring bills and subscriptions." />
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: #131a22;
+      --panel2: #1a232e;
+      --line: #2a3644;
+      --text: #e9eef5;
+      --muted: #8d9aab;
+      --accent: #5eead4;
+      --accent-dim: #134e4a;
+      --danger: #fb7185;
+      --warn: #fbbf24;
+      --ok: #34d399;
+      --shadow: 0 12px 40px rgba(0,0,0,.4);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+    body { min-height: 100vh; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 16px 72px; }
+    header {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+      margin-bottom: 18px;
+    }
+    .brand { display: flex; gap: 12px; align-items: center; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: radial-gradient(circle at 30% 20%, #99f6e4, #0f766e);
+      color: #042f2e; font-weight: 800; display: grid; place-items: center; letter-spacing: -.04em;
+    }
+    h1 { margin: 0; font-size: 1.28rem; letter-spacing: -.02em; }
+    h1 small { display: block; color: var(--muted); font-weight: 500; font-size: .82rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    button, select, input, textarea { font: inherit; color: var(--text); }
+    .btn {
+      background: var(--panel2); border: 1px solid var(--line); border-radius: 10px;
+      padding: 8px 12px; cursor: pointer; font-weight: 600;
+    }
+    .btn:hover { border-color: #3d4f63; }
+    .btn.primary { background: var(--accent-dim); border-color: #2a9d8f; color: var(--accent); }
+    .btn.danger { background: #3f1520; border-color: #7f1d1d; color: var(--danger); }
+    .btn.ghost { background: transparent; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 14px 16px; box-shadow: var(--shadow);
+    }
+    .card .k { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+    .card .v { font-size: 1.5rem; font-weight: 750; margin-top: 4px; letter-spacing: -.03em; }
+    .card .s { color: var(--muted); font-size: .8rem; margin-top: 4px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+    h2 { margin: 0 0 12px; font-size: 1rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+    .field.n { flex: 0 0 120px; min-width: 108px; }
+    .field.w { flex: 2 1 220px; }
+    label { font-size: .74rem; color: var(--muted); }
+    input, select, textarea {
+      background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th { text-align: left; color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+    td { padding: 10px 6px; border-bottom: 1px solid #22303c; vertical-align: top; }
+    tr:hover td { background: #18222c; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+    .pill.ok { background: #103328; color: var(--ok); }
+    .pill.warn { background: #3d2f08; color: var(--warn); }
+    .pill.bad { background: #3f1520; color: var(--danger); }
+    .pill.muted { background: #24303b; color: var(--muted); }
+    .muted { color: var(--muted); }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .actions .btn { padding: 4px 8px; font-size: .78rem; }
+    .empty { color: var(--muted); text-align: center; padding: 18px 6px; }
+    .hidden { display: none !important; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+    dialog {
+      background: var(--panel); color: var(--text); border: 1px solid var(--line);
+      border-radius: 16px; width: min(560px, 94vw); padding: 18px;
+    }
+    dialog::backdrop { background: rgba(0,0,0,.55); }
+    .note { color: var(--muted); font-size: .78rem; margin-top: 8px; }
+    @media (max-width: 720px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; padding: 8px; }
+      td { border: 0; padding: 4px 0; }
+      td::before { content: attr(data-label); display: block; color: var(--muted); font-size: .7rem; text-transform: uppercase; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">B</div>
+        <h1>Burn<small>Subscription & recurring-bill tracker</small></h1>
+      </div>
+      <div class="toolbar">
+        <select id="currency" class="btn" title="Currency symbol">
+          <option value="HK$">HK$</option>
+          <option value="$">$</option>
+          <option value="£">£</option>
+          <option value="€">€</option>
+          <option value="¥">¥</option>
+        </select>
+        <button class="btn" id="exportBtn">Export JSON</button>
+        <button class="btn" id="importBtn">Import</button>
+        <input type="file" id="importFile" accept="application/json" class="hidden" />
+      </div>
+    </header>
+
+    <div class="cards" id="cards"></div>
+
+    <section class="panel">
+      <h2>Add subscription</h2>
+      <form id="form" class="row">
+        <div class="field w">
+          <label>Name</label>
+          <input id="name" required placeholder="Netflix, iCloud, gym, domain…" />
+        </div>
+        <div class="field n">
+          <label>Amount</label>
+          <input id="amount" type="number" min="0" step="0.01" required />
+        </div>
+        <div class="field n">
+          <label>Every</label>
+          <select id="freq">
+            <option value="monthly">Month</option>
+            <option value="yearly">Year</option>
+            <option value="quarterly">Quarter</option>
+            <option value="weekly">Week</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Next due</label>
+          <input id="nextDue" type="date" required />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <input id="category" list="cats" placeholder="Entertainment, Cloud, Fitness…" />
+          <datalist id="cats"></datalist>
+        </div>
+        <div class="field">
+          <label>Trial / cancel-by</label>
+          <input id="cancelBy" type="date" />
+        </div>
+        <div class="field w">
+          <label>Notes / login / cancel URL</label>
+          <input id="note" placeholder="Optional" />
+        </div>
+        <div class="field" style="justify-content:flex-end;min-width:auto;">
+          <label>&nbsp;</label>
+          <button class="btn primary" type="submit">Add</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Due in the next 30 days</h2>
+      <div id="upcoming"></div>
+    </section>
+
+    <section class="panel">
+      <div class="filters">
+        <h2 style="margin:0;margin-right:auto;">All subscriptions</h2>
+        <input id="search" placeholder="Search…" />
+        <select id="statusFilter" class="btn">
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </select>
+        <select id="sortBy" class="btn">
+          <option value="due">Sort: next due</option>
+          <option value="name">Sort: name</option>
+          <option value="cost">Sort: monthly cost</option>
+        </select>
+      </div>
+      <div id="table"></div>
+      <p class="note">Data lives in this browser only. Export a backup before clearing site data. Mark Paid advances the next due date by one billing cycle.</p>
+    </section>
+  </div>
+
+  <dialog id="dlg">
+    <form method="dialog" id="editForm">
+      <h2>Edit subscription</h2>
+      <div class="row" style="margin:12px 0;">
+        <div class="field w"><label>Name</label><input id="e_name" required /></div>
+        <div class="field n"><label>Amount</label><input id="e_amount" type="number" min="0" step="0.01" required /></div>
+        <div class="field n">
+          <label>Every</label>
+          <select id="e_freq">
+            <option value="monthly">Month</option>
+            <option value="yearly">Year</option>
+            <option value="quarterly">Quarter</option>
+            <option value="weekly">Week</option>
+          </select>
+        </div>
+        <div class="field"><label>Next due</label><input id="e_nextDue" type="date" required /></div>
+        <div class="field"><label>Category</label><input id="e_category" /></div>
+        <div class="field"><label>Trial / cancel-by</label><input id="e_cancelBy" type="date" /></div>
+        <div class="field w"><label>Notes</label><input id="e_note" /></div>
+      </div>
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn ghost" value="cancel">Cancel</button>
+        <button class="btn primary" id="saveEdit" value="default">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const KEY = "burn.subs.v1";
+    const $ = (s) => document.querySelector(s);
+    const todayISO = () => new Date().toISOString().slice(0, 10);
+    const uid = () => crypto.randomUUID ? crypto.randomUUID() : (Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+    let db = { currency: "HK$", items: [] };
+    let editingId = null;
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) Object.assign(db, JSON.parse(raw));
+        if (!Array.isArray(db.items)) db.items = [];
+      } catch (e) { console.warn(e); }
+    }
+    function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
+
+    function money(n) {
+      const v = Number(n) || 0;
+      return db.currency + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function daysUntil(dateStr) {
+      if (!dateStr) return null;
+      const a = new Date(dateStr + "T00:00:00");
+      const b = new Date(); b.setHours(0,0,0,0);
+      return Math.round((a - b) / 86400000);
+    }
+    function monthlyOf(item) {
+      const amt = Number(item.amount) || 0;
+      if (item.freq === "yearly") return amt / 12;
+      if (item.freq === "weekly") return amt * 52 / 12;
+      if (item.freq === "quarterly") return amt / 3;
+      return amt;
+    }
+    function advanceDue(item) {
+      const d = new Date(item.nextDue + "T00:00:00");
+      if (item.freq === "yearly") d.setFullYear(d.getFullYear() + 1);
+      else if (item.freq === "weekly") d.setDate(d.getDate() + 7);
+      else if (item.freq === "quarterly") d.setMonth(d.getMonth() + 3);
+      else d.setMonth(d.getMonth() + 1);
+      item.nextDue = d.toISOString().slice(0, 10);
+    }
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&","<":"<",">":">","\"":""","'":"&#39;" }[c]));
+    }
+
+    $("#nextDue").value = todayISO();
+    $("#currency").addEventListener("change", e => { db.currency = e.target.value; save(); render(); });
+    $("#search").addEventListener("input", render);
+    $("#statusFilter").addEventListener("change", render);
+    $("#sortBy").addEventListener("change", render);
+
+    $("#form").addEventListener("submit", e => {
+      e.preventDefault();
+      db.items.push({
+        id: uid(),
+        name: $("#name").value.trim(),
+        amount: Number($("#amount").value),
+        freq: $("#freq").value,
+        nextDue: $("#nextDue").value,
+        category: $("#category").value.trim(),
+        cancelBy: $("#cancelBy").value,
+        note: $("#note").value.trim(),
+        paused: false,
+        createdAt: new Date().toISOString()
+      });
+      $("#name").value = "";
+      $("#amount").value = "";
+      $("#note").value = "";
+      $("#cancelBy").value = "";
+      save(); render();
+    });
+
+    document.body.addEventListener("click", e => {
+      const t = e.target;
+      if (!(t instanceof HTMLElement)) return;
+      const paid = t.getAttribute("data-paid");
+      const pause = t.getAttribute("data-pause");
+      const del = t.getAttribute("data-del");
+      const edit = t.getAttribute("data-edit");
+      if (paid) {
+        const item = db.items.find(x => x.id === paid);
+        if (item) { advanceDue(item); save(); render(); }
+      }
+      if (pause) {
+        const item = db.items.find(x => x.id === pause);
+        if (item) { item.paused = !item.paused; save(); render(); }
+      }
+      if (del) {
+        if (!confirm("Delete this subscription?")) return;
+        db.items = db.items.filter(x => x.id !== del);
+        save(); render();
+      }
+      if (edit) openEdit(edit);
+    });
+
+    function openEdit(id) {
+      const x = db.items.find(i => i.id === id);
+      if (!x) return;
+      editingId = id;
+      $("#e_name").value = x.name || "";
+      $("#e_amount").value = x.amount;
+      $("#e_freq").value = x.freq;
+      $("#e_nextDue").value = x.nextDue || "";
+      $("#e_category").value = x.category || "";
+      $("#e_cancelBy").value = x.cancelBy || "";
+      $("#e_note").value = x.note || "";
+      $("#dlg").showModal();
+    }
+
+    $("#editForm").addEventListener("submit", e => {
+      const val = e.submitter && e.submitter.value;
+      if (val === "cancel" || !editingId) return;
+      e.preventDefault();
+      const x = db.items.find(i => i.id === editingId);
+      if (x) {
+        x.name = $("#e_name").value.trim();
+        x.amount = Number($("#e_amount").value);
+        x.freq = $("#e_freq").value;
+        x.nextDue = $("#e_nextDue").value;
+        x.category = $("#e_category").value.trim();
+        x.cancelBy = $("#e_cancelBy").value;
+        x.note = $("#e_note").value.trim();
+        save(); render();
+      }
+      editingId = null;
+      $("#dlg").close();
+    });
+
+    $("#exportBtn").addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(db, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "burn-subscriptions.json";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+    $("#importBtn").addEventListener("click", () => $("#importFile").click());
+    $("#importFile").addEventListener("change", async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        db.currency = parsed.currency || db.currency;
+        db.items = Array.isArray(parsed.items) ? parsed.items : [];
+        save(); render();
+      } catch {
+        alert("Import failed. Use a JSON file exported from Burn.");
+      }
+      e.target.value = "";
+    });
+
+    function render() {
+      $("#currency").value = db.currency || "HK$";
+      const active = db.items.filter(x => !x.paused);
+      const monthly = active.reduce((s, x) => s + monthlyOf(x), 0);
+      const upcoming = active.filter(x => {
+        const d = daysUntil(x.nextDue);
+        return d !== null && d >= 0 && d <= 30;
+      }).sort((a, b) => a.nextDue.localeCompare(b.nextDue));
+      const cancelSoon = db.items.filter(x => {
+        const d = daysUntil(x.cancelBy);
+        return d !== null && d >= 0 && d <= 14;
+      });
+
+      $("#cards").innerHTML = `
+        <div class="card"><div class="k">Monthly burn</div><div class="v">${money(monthly)}</div><div class="s">${active.length} active · ${db.items.length - active.length} paused</div></div>
+        <div class="card"><div class="k">Yearly equivalent</div><div class="v">${money(monthly * 12)}</div></div>
+        <div class="card"><div class="k">Due in 30 days</div><div class="v">${upcoming.length}</div><div class="s">${money(upcoming.reduce((s,x)=>s+Number(x.amount),0))} hitting soon</div></div>
+        <div class="card"><div class="k">Cancel-by ≤14 days</div><div class="v">${cancelSoon.length}</div></div>
+      `;
+
+      $("#upcoming").innerHTML = upcoming.length ? `
+        <table>
+          <thead><tr><th>When</th><th>Name</th><th>Charge</th><th></th></tr></thead>
+          <tbody>
+            ${upcoming.map(x => {
+              const d = daysUntil(x.nextDue);
+              const cls = d <= 3 ? "bad" : d <= 7 ? "warn" : "muted";
+              const label = d === 0 ? "today" : d + "d";
+              return `<tr>
+                <td data-label="When">${esc(x.nextDue)} <span class="pill ${cls}">${label}</span></td>
+                <td data-label="Name">${esc(x.name)}</td>
+                <td data-label="Charge">${money(x.amount)} / ${esc(x.freq)}</td>
+                <td data-label=""><button class="btn primary" data-paid="${esc(x.id)}">Mark paid</button></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>` : `<div class="empty">Nothing due in the next 30 days.</div>`;
+
+      const q = ($("#search").value || "").toLowerCase();
+      const status = $("#statusFilter").value;
+      const sortBy = $("#sortBy").value;
+      let rows = db.items.filter(x => {
+        if (status === "active" && x.paused) return false;
+        if (status === "paused" && !x.paused) return false;
+        const blob = [x.name, x.category, x.note].join(" ").toLowerCase();
+        return blob.includes(q);
+      });
+      rows.sort((a, b) => {
+        if (sortBy === "name") return a.name.localeCompare(b.name);
+        if (sortBy === "cost") return monthlyOf(b) - monthlyOf(a);
+        return (a.nextDue || "").localeCompare(b.nextDue || "");
+      });
+
+      const cats = [...new Set(db.items.map(x => x.category).filter(Boolean))].sort();
+      $("#cats").innerHTML = cats.map(c => `<option value="${esc(c)}">`).join("");
+
+      $("#table").innerHTML = rows.length ? `
+        <table>
+          <thead><tr><th>Name</th><th>Amount</th><th>Monthly</th><th>Next due</th><th>Cancel-by</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            ${rows.map(x => {
+              const d = daysUntil(x.nextDue);
+              const cd = daysUntil(x.cancelBy);
+              const cancelPill = x.cancelBy
+                ? `<span class="pill ${cd < 0 ? "muted" : cd <= 14 ? "warn" : "ok"}">${esc(x.cancelBy)}</span>`
+                : `<span class="muted">—</span>`;
+              return `<tr>
+                <td data-label="Name">${esc(x.name)}<div class="muted">${esc([x.category, x.note].filter(Boolean).join(" · "))}</div></td>
+                <td data-label="Amount">${money(x.amount)} / ${esc(x.freq)}</td>
+                <td data-label="Monthly">${money(monthlyOf(x))}</td>
+                <td data-label="Next due">${esc(x.nextDue || "—")}${d !== null && d >= 0 && d <= 7 ? ` <span class="pill warn">${d}d</span>` : ""}</td>
+                <td data-label="Cancel-by">${cancelPill}</td>
+                <td data-label="Status"><span class="pill ${x.paused ? "muted" : "ok"}">${x.paused ? "Paused" : "Active"}</span></td>
+                <td data-label="">
+                  <div class="actions">
+                    <button class="btn primary" data-paid="${esc(x.id)}">Paid</button>
+                    <button class="btn" data-pause="${esc(x.id)}">${x.paused ? "Resume" : "Pause"}</button>
+                    <button class="btn" data-edit="${esc(x.id)}">Edit</button>
+                    <button class="btn danger" data-del="${esc(x.id)}">Delete</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>` : `<div class="empty">No subscriptions match.</div>`;
+    }
+
+    load();
+    render();
+  </script>
+</body>
+</html>

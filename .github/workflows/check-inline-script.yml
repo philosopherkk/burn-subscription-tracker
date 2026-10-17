@@ -1,0 +1,21 @@
+name: check inline script
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node-check:
+    name: node --check inline script
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Extract the inline script and run node --check
+        run: node scripts/check-inline-script.mjs
